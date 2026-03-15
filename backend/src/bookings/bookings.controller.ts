@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -14,6 +14,20 @@ export class BookingsController {
   @Post()
   create(@Body() dto: CreateBookingDto, @CurrentUser() user: UserDocument) {
     return this.bookingsService.create(dto, user);
+  }
+
+  // Real-time availability check — called from the booking form before submit
+  @Get('availability')
+  checkAvailability(
+    @Query('propertyId') propertyId: string,
+    @Query('checkIn') checkIn: string,
+    @Query('checkOut') checkOut: string,
+  ) {
+    return this.bookingsService.checkAvailability(
+      propertyId,
+      new Date(checkIn),
+      new Date(checkOut),
+    );
   }
 
   @Get('my')

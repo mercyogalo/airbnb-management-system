@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, IsMongoId, IsOptional, IsString, Min } from 'class-validator';
+import { IsDate, IsInt, IsMongoId, IsOptional, IsString, Min, Matches } from 'class-validator';
 
 export class CreateBookingDto {
   @IsMongoId()
@@ -20,4 +20,11 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   specialRequests?: string;
+
+  
+  @IsString()
+  @Matches(/^\+?[0-9\s\-().]{7,20}$/, {
+    message: 'Please provide a valid phone number.',
+  })
+  guestPhone: string;
 }

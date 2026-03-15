@@ -35,6 +35,10 @@ export class Booking {
 
   @Prop()
   specialRequests?: string;
+
+  // Guest contact — required so owner can reach them
+  @Prop({ required: true })
+  guestPhone: string;
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);
