@@ -9,6 +9,11 @@ import { UserRole, UserDocument } from '../users/schemas/user.schema';
 export class PropertiesService {
   constructor(@InjectModel(Property.name) private propertyModel: Model<PropertyDocument>) {}
 
+  // Helper — safely extract owner ID whether the field is populated or a raw ObjectId
+  private resolveOwnerId(property: PropertyDocument): string {
+    return (property.owner as any)?._id?.toString() ?? property.owner.toString();
+  }
+
   private normalizeImages<T extends { mainImage?: string; images?: string[] }>(payload: T): T {
     const next = { ...payload };
 
@@ -52,42 +57,53 @@ export class PropertiesService {
   }
 
   async updateStatus(id: string, status: PropertyStatus): Promise<Property> {
-    const property = await this.propertyModel.findByIdAndUpdate(id, { status }, { new: true });
+    const property = await this.propertyModel.findByIdAndUpdate(
+      id,
+      { status },
+      { returnDocument: 'after' },
+    );
     if (!property) throw new NotFoundException('Property not found');
     return property;
   }
 
   async update(id: string, dto: Partial<CreatePropertyDto>, user: UserDocument): Promise<Property> {
-  const property = await this.findOne(id);
+    const property = await this.findOne(id);
 
-  // Cast to any to safely extract the id whether populated or not
-  const ownerId = (property.owner as any)?._id?.toString() ?? property.owner.toString();
+    if (this.resolveOwnerId(property) !== user._id.toString() && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Not authorized');
+    }
 
-  if (ownerId !== user._id.toString() && user.role !== UserRole.ADMIN) {
-    throw new ForbiddenException('Not authorized');
+    const payload = this.normalizeImages(dto);
+    const updatedProperty = await this.propertyModel.findByIdAndUpdate(
+      id,
+      payload,
+      { returnDocument: 'after' },
+    );
+    if (!updatedProperty) throw new NotFoundException('Property not found');
+    return updatedProperty;
   }
-
-  const payload = this.normalizeImages(dto);
-  const updatedProperty = await this.propertyModel.findByIdAndUpdate(id, payload, { new: true });
-  if (!updatedProperty) throw new NotFoundException('Property not found');
-  return updatedProperty;
-}
 
   async delete(id: string, user: UserDocument): Promise<void> {
     const property = await this.findOne(id);
-    if (property.owner.toString() !== user._id.toString() && user.role !== UserRole.ADMIN) {
+
+    if (this.resolveOwnerId(property) !== user._id.toString() && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Not authorized');
     }
+
     await this.propertyModel.findByIdAndDelete(id);
   }
 
   async blockDates(id: string, dates: Date[], user: UserDocument): Promise<Property> {
     const property = await this.findOne(id);
-    if (property.owner.toString() !== user._id.toString()) throw new ForbiddenException();
+
+    if (this.resolveOwnerId(property) !== user._id.toString()) {
+      throw new ForbiddenException('Not authorized');
+    }
+
     const updatedProperty = await this.propertyModel.findByIdAndUpdate(
       id,
       { $addToSet: { blockedDates: { $each: dates } } },
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!updatedProperty) throw new NotFoundException('Property not found');
     return updatedProperty;

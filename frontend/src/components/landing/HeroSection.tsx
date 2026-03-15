@@ -26,16 +26,7 @@ export function HeroSection() {
         </div>
       </div>
 
-      <div className="container-shell absolute inset-x-0 bottom-6">
-        <form className="grid gap-3 rounded-2xl border border-white/20 bg-white/95 p-4 shadow-soft backdrop-blur sm:grid-cols-4">
-          <input className="field" placeholder="City" />
-          <input className="field" type="number" min={1} placeholder="Guests" />
-          <input className="field" type="date" aria-label="Check-in date" />
-          <button type="button" className="btn-primary w-full">
-            Search
-          </button>
-        </form>
-      </div>
+   
     </section>
   );
 }

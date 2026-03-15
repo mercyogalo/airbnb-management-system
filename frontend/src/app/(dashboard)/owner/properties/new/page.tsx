@@ -80,6 +80,8 @@ export default function NewPropertyPage() {
 
   const progressClass = step === 1 ? 'w-1/3' : step === 2 ? 'w-2/3' : 'w-full';
 
+  // ── Rules ──────────────────────────────────────────────────────
+
   const addRule = () => {
     const value = ruleInput.trim();
     if (!value) return;
@@ -87,18 +89,25 @@ export default function NewPropertyPage() {
     setRuleInput('');
   };
 
-  const removeRule = (index: number) => {
-    setRules((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+  const handleRuleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addRule();
+    }
   };
+
+  const removeRule = (index: number) => {
+    setRules((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ── Images ─────────────────────────────────────────────────────
 
   const onMainImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-
     try {
-      const selected = await createSelectedImage(file);
-      setMainImage(selected);
+      setMainImage(await createSelectedImage(file));
     } catch {
       toast.error('Could not load that image preview. Please try another image.');
     }
@@ -108,36 +117,40 @@ export default function NewPropertyPage() {
     const files = Array.from(event.target.files ?? []);
     event.target.value = '';
     if (files.length === 0) return;
-
     try {
-      const selectedImages = await Promise.all(files.map((file) => createSelectedImage(file)));
-      setGalleryImages((prev) => [...prev, ...selectedImages]);
+      const selected = await Promise.all(files.map(createSelectedImage));
+      // Always append — never replace — so owners can keep adding batches
+      setGalleryImages((prev) => [...prev, ...selected]);
     } catch {
       toast.error('Could not load one or more gallery images. Please try again.');
     }
   };
 
   const removeGalleryImage = (id: string) => {
-    setGalleryImages((prev) => prev.filter((image) => image.id !== id));
+    setGalleryImages((prev) => prev.filter((img) => img.id !== id));
   };
+
+  const clearAllGallery = () => setGalleryImages([]);
+
+  // ── Navigation ─────────────────────────────────────────────────
 
   const goNext = async () => {
     if (step === 1) {
       const valid = await trigger(['name', 'description', 'maxGuests', 'pricePerNight']);
       if (!valid) return;
     }
-
     if (step === 2) {
       const valid = await trigger(['address', 'city', 'country']);
       if (!valid) return;
     }
-
     setStep((prev) => Math.min(3, prev + 1));
   };
 
+  // ── Submit ─────────────────────────────────────────────────────
+
   const onSubmit = async (values: PropertyFormValues) => {
     if (!mainImage) {
-      toast.error('Main / cover image is required.');
+      toast.error('A cover photo is required.');
       return;
     }
 
@@ -146,13 +159,15 @@ export default function NewPropertyPage() {
 
       const formData = new FormData();
       formData.append('mainImage', mainImage.file);
-      galleryImages.forEach((image) => formData.append('galleryImages', image.file));
+      galleryImages.forEach((img) => formData.append('galleryImages', img.file));
 
-      const uploadResponse = await api.post<UploadPropertyImagesResponse>('/upload/property-images', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const uploadResponse = await api.post<UploadPropertyImagesResponse>(
+        '/upload/property-images',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+
+      setUploadingImages(false);
 
       await api.post('/properties', {
         name: values.name,
@@ -166,32 +181,37 @@ export default function NewPropertyPage() {
         },
         rules,
         mainImage: uploadResponse.data.mainImage,
-        images: uploadResponse.data.galleryImages,
+        images: uploadResponse.data.allImages,
       });
 
-      toast.success('Property submitted successfully.');
+      toast.success('Property submitted for review.');
       router.push('/owner/properties');
     } catch (err) {
-      toast.error(getReadableError(err, 'Could not create property.'));
-    } finally {
       setUploadingImages(false);
+      toast.error(getReadableError(err, 'Could not create property.'));
     }
   };
 
+  const isBusy = isSubmitting || uploadingImages;
+
   return (
     <section className="space-y-5">
+      {/* Progress header */}
       <div className="rounded-2xl border border-secondary/10 bg-white p-5 shadow-soft">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-semibold">Add New Property</h2>
           <span className="text-sm text-dark/70">Step {step} of 3</span>
         </div>
-
         <div className="h-2 overflow-hidden rounded-full bg-muted">
-          <div className={`h-full rounded-full bg-secondary transition-all ${progressClass}`} />
+          <div className={`h-full rounded-full bg-secondary transition-all duration-300 ${progressClass}`} />
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="rounded-2xl border border-secondary/10 bg-white p-5 shadow-soft">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="rounded-2xl border border-secondary/10 bg-white p-5 shadow-soft"
+      >
+        {/* ── Step 1: Basic details ── */}
         {step === 1 ? (
           <div className="grid gap-4">
             <div>
@@ -209,28 +229,19 @@ export default function NewPropertyPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium text-dark/85">Max Guests</label>
-                <input
-                  type="number"
-                  min={1}
-                  className="field"
-                  {...register('maxGuests', { valueAsNumber: true })}
-                />
+                <input type="number" min={1} className="field" {...register('maxGuests', { valueAsNumber: true })} />
                 {errors.maxGuests ? <p className="mt-1 text-xs text-red-600">{errors.maxGuests.message}</p> : null}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-dark/85">Price Per Night</label>
-                <input
-                  type="number"
-                  min={1}
-                  className="field"
-                  {...register('pricePerNight', { valueAsNumber: true })}
-                />
+                <input type="number" min={1} className="field" {...register('pricePerNight', { valueAsNumber: true })} />
                 {errors.pricePerNight ? <p className="mt-1 text-xs text-red-600">{errors.pricePerNight.message}</p> : null}
               </div>
             </div>
           </div>
         ) : null}
 
+        {/* ── Step 2: Location ── */}
         {step === 2 ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -251,37 +262,47 @@ export default function NewPropertyPage() {
           </div>
         ) : null}
 
+        {/* ── Step 3: Rules & Photos ── */}
         {step === 3 ? (
-          <div className="grid gap-5">
+          <div className="grid gap-6">
+
+            {/* House Rules */}
             <div>
               <label className="mb-1 block text-sm font-medium text-dark/85">House Rules</label>
               <div className="flex gap-2">
                 <input
                   className="field"
                   value={ruleInput}
-                  onChange={(event) => setRuleInput(event.target.value)}
-                  placeholder="No smoking"
+                  onChange={(e) => setRuleInput(e.target.value)}
+                  onKeyDown={handleRuleKeyDown}
+                  placeholder="e.g. No smoking"
                 />
-                <button type="button" className="btn-ghost" onClick={addRule}>
+                <button type="button" className="btn-ghost shrink-0" onClick={addRule}>
                   Add
                 </button>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {rules.map((rule, index) => (
-                  <button
-                    key={`${rule}-${index}`}
-                    type="button"
-                    onClick={() => removeRule(index)}
-                    className="rounded-full bg-muted px-3 py-1 text-xs text-secondary hover:bg-secondary/10"
-                  >
-                    {rule} ×
-                  </button>
-                ))}
-              </div>
+              <p className="mt-1 text-xs text-dark/50">Press Enter or click Add. Click a rule pill to remove it.</p>
+              {rules.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {rules.map((rule, index) => (
+                    <button
+                      key={`${rule}-${index}`}
+                      type="button"
+                      onClick={() => removeRule(index)}
+                      className="rounded-full bg-muted px-3 py-1 text-xs text-secondary hover:bg-secondary/10"
+                    >
+                      {rule} ×
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
+            {/* Cover Photo */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-dark/85">Main / Cover Photo (required)</label>
+              <label className="mb-1 block text-sm font-medium text-dark/85">
+                Cover Photo <span className="text-red-500">*</span>
+              </label>
               <div className="rounded-xl border border-dashed border-secondary/35 bg-muted/40 p-3">
                 <input
                   type="file"
@@ -289,14 +310,16 @@ export default function NewPropertyPage() {
                   className="field"
                   onChange={onMainImageChange}
                 />
-                <p className="mt-2 text-xs text-dark/65">Select one image for the listing cover.</p>
+                <p className="mt-2 text-xs text-dark/60">
+                  One image used as the listing cover. JPG, PNG or WebP, max 5 MB.
+                </p>
               </div>
 
               {mainImage ? (
                 <div className="mt-3 overflow-hidden rounded-xl border border-secondary/15 bg-white">
                   <Image
                     src={mainImage.previewUrl}
-                    alt="Main property preview"
+                    alt="Cover photo preview"
                     width={1200}
                     height={800}
                     unoptimized
@@ -316,8 +339,28 @@ export default function NewPropertyPage() {
               ) : null}
             </div>
 
+            {/* Gallery Photos */}
             <div>
-              <label className="mb-1 block text-sm font-medium text-dark/85">Gallery Photos (optional)</label>
+              <div className="mb-1 flex items-center justify-between">
+                <label className="text-sm font-medium text-dark/85">
+                  Gallery Photos
+                  {galleryImages.length > 0 ? (
+                    <span className="ml-2 rounded-full bg-secondary/10 px-2 py-0.5 text-xs font-semibold text-secondary">
+                      {galleryImages.length} selected
+                    </span>
+                  ) : null}
+                </label>
+                {galleryImages.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={clearAllGallery}
+                    className="text-xs font-medium text-red-500 hover:underline"
+                  >
+                    Clear all
+                  </button>
+                ) : null}
+              </div>
+
               <div className="rounded-xl border border-dashed border-secondary/35 bg-muted/40 p-3">
                 <input
                   type="file"
@@ -326,45 +369,52 @@ export default function NewPropertyPage() {
                   className="field"
                   onChange={onGalleryImagesChange}
                 />
-                <p className="mt-2 text-xs text-dark/65">You can add more photos multiple times.</p>
+                <p className="mt-2 text-xs text-dark/60">
+                  Select multiple at once, or come back and add more batches. No limit.
+                </p>
               </div>
 
-              <p className="mt-3 text-xs font-medium text-dark/70">{galleryImages.length} photos selected</p>
-
-              <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {galleryImages.map((image) => (
-                  <div key={image.id} className="overflow-hidden rounded-xl border border-secondary/15 bg-white">
-                    <Image
-                      src={image.previewUrl}
-                      alt={image.file.name}
-                      width={900}
-                      height={600}
-                      unoptimized
-                      className="h-32 w-full object-cover"
-                    />
-                    <div className="flex items-center justify-between px-2 py-1.5 text-xs text-dark/70">
-                      <span className="truncate pr-2">{image.file.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeGalleryImage(image.id)}
-                        className="font-semibold text-red-600 hover:underline"
-                      >
-                        Remove
-                      </button>
+              {galleryImages.length > 0 ? (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {galleryImages.map((image) => (
+                    <div
+                      key={image.id}
+                      className="overflow-hidden rounded-xl border border-secondary/15 bg-white"
+                    >
+                      <Image
+                        src={image.previewUrl}
+                        alt={image.file.name}
+                        width={900}
+                        height={600}
+                        unoptimized
+                        className="h-32 w-full object-cover"
+                      />
+                      <div className="flex items-center justify-between px-2 py-1.5 text-xs text-dark/70">
+                        <span className="truncate pr-2">{image.file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(image.id)}
+                          className="shrink-0 font-semibold text-red-600 hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
+
           </div>
         ) : null}
 
+        {/* ── Actions ── */}
         <div className="mt-8 flex gap-2">
           <button
             type="button"
             className="btn-ghost w-full"
             onClick={() => setStep((prev) => Math.max(1, prev - 1))}
-            disabled={step === 1}
+            disabled={step === 1 || isBusy}
           >
             Back
           </button>
@@ -374,8 +424,8 @@ export default function NewPropertyPage() {
               Next Step
             </button>
           ) : (
-            <button type="submit" className="btn-primary w-full" disabled={isSubmitting || uploadingImages}>
-              {isSubmitting || uploadingImages ? 'Submitting...' : 'Submit Property'}
+            <button type="submit" className="btn-primary w-full" disabled={isBusy}>
+              {uploadingImages ? 'Uploading photos...' : isSubmitting ? 'Submitting...' : 'Submit Property'}
             </button>
           )}
         </div>
