@@ -18,7 +18,7 @@ export default function AdminPropertiesPage() {
     setError(null);
 
     try {
-      const response = await api.get<Property[]>('/properties');
+      const response = await api.get<Property[]>('/properties/admin/all');
       setProperties(response.data);
     } catch (err) {
       setError(getReadableError(err, 'Could not load properties.'));
@@ -43,10 +43,6 @@ export default function AdminPropertiesPage() {
 
   return (
     <section className="space-y-4">
-      <p className="rounded-xl bg-muted p-3 text-sm text-dark/75">
-        The current backend returns publicly available properties on this endpoint.
-      </p>
-
       {loading ? <LoadingSpinner label="Loading properties..." /> : null}
       {error ? <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
 

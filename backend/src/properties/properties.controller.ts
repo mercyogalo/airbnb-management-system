@@ -19,6 +19,16 @@ export class PropertiesController {
     return this.propertiesService.findAll(query);
   }
 
+  // Admin — browse all properties (pending, approved, rejected)
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findAllForAdmin(
+    @Query() query: { city?: string; minPrice?: number; maxPrice?: number; guests?: number; status?: PropertyStatus },
+  ) {
+    return this.propertiesService.findAllForAdmin(query);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.propertiesService.findOne(id);

@@ -189,6 +189,7 @@ If you want the frontend on port `3000`, change one of these:
 
 ## Improvements I Would Make With More Time
 
+- Enable real-time reviews for each property
 - Enable sending emails for real-time updates to all relevant parties, such as booking confirmations, cancellations, property approval updates, and owner notifications.
 - Add dedicated admin APIs for listing all users and all properties across statuses instead of deriving admin screens from existing endpoints.
 - Add refresh-token support and more durable session handling.

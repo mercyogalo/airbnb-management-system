@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -26,6 +26,10 @@ const bookingSchema = z.object({
 
 type BookingFormValues = z.infer<typeof bookingSchema>;
 
+interface BookingResponse {
+  totalPrice: number;
+}
+
 export default function UserBrowsePage() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [city, setCity] = useState('');
@@ -37,7 +41,7 @@ export default function UserBrowsePage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<BookingFormValues>({
@@ -50,11 +54,14 @@ export default function UserBrowsePage() {
     },
   });
 
+  const checkInValue = useWatch({ control, name: 'checkIn' });
+  const checkOutValue = useWatch({ control, name: 'checkOut' });
+
   const totalPrice = useMemo(() => {
-    if (!selectedProperty) return 0;
-    const nights = getNightCount(watch('checkIn'), watch('checkOut'));
+    if (!selectedProperty || !checkInValue || !checkOutValue) return 0;
+    const nights = getNightCount(checkInValue, checkOutValue);
     return nights * selectedProperty.pricePerNight;
-  }, [selectedProperty, watch]);
+  }, [checkInValue, checkOutValue, selectedProperty]);
 
   const onSearch = () => {
     refetch({
@@ -71,7 +78,7 @@ export default function UserBrowsePage() {
     if (!selectedProperty) return;
 
     try {
-      await api.post('/bookings', {
+      const response = await api.post<BookingResponse>('/bookings', {
         propertyId: selectedProperty._id,
         checkIn: values.checkIn,
         checkOut: values.checkOut,
@@ -79,7 +86,7 @@ export default function UserBrowsePage() {
         specialRequests: values.specialRequests,
       });
 
-      toast.success('Booking created successfully.');
+      toast.success(`Booking created successfully. Total: ${formatCurrency(response.data.totalPrice)}`);
       setSelectedProperty(null);
       reset();
     } catch (err) {

@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { MapPin, Users } from 'lucide-react';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { formatCurrency } from '@/lib/utils';
@@ -55,9 +56,9 @@ export function PropertyCard({ property, onBook, showActions, actionSlot }: Prop
               Book Now
             </button>
           ) : (
-            <button type="button" className="btn-primary w-full">
+            <Link href={`/properties/${property._id}`} className="btn-primary w-full text-center">
               View Details
-            </button>
+            </Link>
           )}
           {actionSlot}
         </div>

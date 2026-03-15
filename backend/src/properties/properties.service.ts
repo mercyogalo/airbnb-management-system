@@ -46,6 +46,36 @@ export class PropertiesService {
     return this.propertyModel.find(filter).populate('owner', 'name email').exec();
   }
 
+  async findAllForAdmin(
+    query: { city?: string; minPrice?: number; maxPrice?: number; guests?: number; status?: PropertyStatus },
+  ) {
+    const filter: any = {};
+
+    if (query.status) {
+      filter.status = query.status;
+    }
+
+    if (query.city) {
+      filter['location.city'] = new RegExp(query.city, 'i');
+    }
+
+    if (query.minPrice || query.maxPrice) {
+      filter.pricePerNight = {};
+      if (query.minPrice) filter.pricePerNight.$gte = query.minPrice;
+      if (query.maxPrice) filter.pricePerNight.$lte = query.maxPrice;
+    }
+
+    if (query.guests) {
+      filter.maxGuests = { $gte: query.guests };
+    }
+
+    return this.propertyModel
+      .find(filter)
+      .populate('owner', 'name email')
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
   async findOne(id: string): Promise<PropertyDocument> {
     const property = await this.propertyModel.findById(id).populate('owner', 'name email');
     if (!property) throw new NotFoundException('Property not found');

@@ -20,6 +20,39 @@ export class BookingsService {
     private propertiesService: PropertiesService,
   ) {}
 
+  private toIdString(value: unknown): string | null {
+    if (!value) return null;
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (value instanceof Types.ObjectId) {
+      return value.toString();
+    }
+
+    if (typeof value === 'object' && value !== null) {
+      const doc = value as { _id?: unknown; id?: unknown; toString?: () => string };
+
+      if (typeof doc.id === 'string' && doc.id.length > 0) {
+        return doc.id;
+      }
+
+      if (doc._id && doc._id !== value) {
+        return this.toIdString(doc._id);
+      }
+
+      if (typeof doc.toString === 'function') {
+        const asString = doc.toString();
+        if (asString && asString !== '[object Object]') {
+          return asString;
+        }
+      }
+    }
+
+    return null;
+  }
+
   async create(dto: CreateBookingDto, guest: UserDocument): Promise<Booking> {
     const { propertyId, checkIn, checkOut, guests } = dto;
 
@@ -79,9 +112,18 @@ export class BookingsService {
 
   async findAllByProperty(propertyId: string, owner: UserDocument) {
     const property = await this.propertiesService.findOne(propertyId) as PropertyDocument;
-    if (property.owner.toString() !== owner._id.toString() && owner.role !== UserRole.ADMIN) {
+
+    const propertyOwnerId = this.toIdString(property.owner);
+    const requesterId = this.toIdString(owner._id);
+
+    if (!propertyOwnerId || !requesterId) {
       throw new ForbiddenException('Not authorized');
     }
+
+    if (propertyOwnerId !== requesterId && owner.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Not authorized');
+    }
+
     return this.bookingModel
       .find({ property: new Types.ObjectId(propertyId) })
       .populate('guest', 'name email')
@@ -94,11 +136,17 @@ export class BookingsService {
       .populate('property guest');
     if (!booking) throw new NotFoundException('Booking not found');
 
-    const isGuest = booking.guest['_id'].toString() === user._id.toString();
-    const isOwner = (booking.property as any).owner?.toString() === user._id.toString();
+    const requesterId = this.toIdString(user._id);
+    const guestId = this.toIdString(booking.guest);
+    const ownerId = this.toIdString((booking.property as any)?.owner);
+
+    const isGuest = guestId !== null && requesterId !== null && guestId === requesterId;
+    const isOwner = ownerId !== null && requesterId !== null && ownerId === requesterId;
+
     if (!isGuest && !isOwner && user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Not authorized');
     }
+
     return booking;
   }
 
@@ -106,8 +154,12 @@ export class BookingsService {
     const booking = await this.bookingModel.findById(id).populate('property');
     if (!booking) throw new NotFoundException('Booking not found');
 
-    const isGuest = booking.guest.toString() === user._id.toString();
-    const isOwner = (booking.property as any).owner?.toString() === user._id.toString();
+    const requesterId = this.toIdString(user._id);
+    const guestId = this.toIdString(booking.guest);
+    const ownerId = this.toIdString((booking.property as any)?.owner);
+
+    const isGuest = guestId !== null && requesterId !== null && guestId === requesterId;
+    const isOwner = ownerId !== null && requesterId !== null && ownerId === requesterId;
 
     // Guests can only cancel their own bookings
     if (status === BookingStatus.CANCELLED && !isGuest && !isOwner && user.role !== UserRole.ADMIN) {

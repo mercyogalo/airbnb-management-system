@@ -50,7 +50,7 @@ export function SampleProperties() {
         ) : null}
 
         <div className="mt-10 text-center">
-          <Link href="/register" className="btn-primary">
+          <Link href="/properties" className="btn-primary">
             View All Properties
           </Link>
         </div>

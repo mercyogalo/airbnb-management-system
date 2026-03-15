@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,13 +29,16 @@ function getRedirectPath(role: AuthResponse['user']['role']) {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
   const { user, hydrated } = useAuth();
+  const nextPath = searchParams.get('next');
+  const safeNextPath = nextPath && nextPath.startsWith('/') ? nextPath : null;
 
   useEffect(() => {
     if (!hydrated || !user) return;
-    router.replace(getRedirectPath(user.role));
-  }, [hydrated, router, user]);
+    router.replace(safeNextPath ?? getRedirectPath(user.role));
+  }, [hydrated, router, safeNextPath, user]);
 
   const {
     register,
@@ -54,7 +57,7 @@ export default function LoginPage() {
       const response = await api.post<AuthResponse>('/auth/login', values);
       setAuth(response.data.user, response.data.token);
       toast.success('Welcome back!');
-      router.push(getRedirectPath(response.data.user.role));
+      router.push(safeNextPath ?? getRedirectPath(response.data.user.role));
     } catch (error) {
       toast.error(getReadableError(error, 'Unable to log you in.'));
     }
@@ -69,7 +72,7 @@ export default function LoginPage() {
       title="Welcome Back"
       subtitle="Sign in to continue your bookings and hosting dashboard."
       switchLabel="Don't have an account?"
-      switchHref="/register"
+      switchHref={safeNextPath ? `/register?next=${encodeURIComponent(safeNextPath)}` : '/register'}
       switchText="Create one"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
