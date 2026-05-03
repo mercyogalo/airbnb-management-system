@@ -9,20 +9,20 @@ import { useAuth } from '@/hooks/useAuth';
 import type { UserRole } from '@/types';
 
 const titleMap: Record<string, string> = {
-  '/user/browse': 'Browse Properties',
-  '/user/bookings': 'My Bookings',
-  '/owner/properties': 'My Properties',
-  '/owner/properties/new': 'Add Property',
-  '/owner/bookings': 'Bookings Received',
-  '/admin/analytics': 'Admin Analytics',
-  '/admin/users': 'All Users',
-  '/admin/properties': 'All Properties',
+  '/user/browse': 'Browse stays',
+  '/user/bookings': 'My bookings',
+  '/user/profile': 'Profile',
+  '/admin/profile': 'Profile',
+  '/admin/analytics': 'Analytics',
+  '/admin/bookings': 'Bookings',
+  '/admin/users': 'Customers',
+  '/admin/properties': 'Listings',
+  '/admin/properties/new': 'Add listing',
 };
 
 function getDashboardByRole(role: UserRole) {
-  if (role === 'owner') return '/owner/properties';
-  if (role === 'admin') return '/admin/analytics';
-  return '/user/bookings';
+  if (role === 'admin') return '/admin/properties';
+  return '/user/browse';
 }
 
 function canAccessRouteByRole(role: UserRole, pathname: string) {
@@ -30,12 +30,8 @@ function canAccessRouteByRole(role: UserRole, pathname: string) {
     return role === 'admin';
   }
 
-  if (pathname.startsWith('/owner')) {
-    return role === 'owner' || role === 'admin';
-  }
-
   if (pathname.startsWith('/user')) {
-    return role === 'user' || role === 'owner' || role === 'admin';
+    return role === 'user';
   }
 
   return true;
@@ -65,8 +61,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pageTitle = useMemo(() => {
     const directMatch = titleMap[pathname];
     if (directMatch) return directMatch;
-    if (pathname.includes('/bookings/') && pathname.startsWith('/user')) return 'Booking Details';
-    if (pathname.includes('/edit')) return 'Edit Property';
+    if (pathname.includes('/bookings/') && pathname.startsWith('/user')) return 'Booking details';
+    if (pathname.startsWith('/admin/properties/') && pathname.endsWith('/edit')) return 'Edit listing';
+    if (pathname.startsWith('/user')) return 'Dashboard';
+    if (pathname.startsWith('/admin')) return 'Dashboard';
     return 'Dashboard';
   }, [pathname]);
 
@@ -79,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!canAccessCurrentRoute) {
-    return <LoadingSpinner className="min-h-screen" label="Verifying access permissions..." />;
+    return <LoadingSpinner className="min-h-screen" label="Verifying access..." />;
   }
 
   return (
@@ -103,7 +101,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <div className="hidden text-right sm:block">
               <p className="text-xs font-semibold text-secondary">{user.name}</p>
-              <p className="text-[11px] uppercase tracking-wide text-dark/55">{user.role}</p>
+              <p className="text-[11px] uppercase tracking-wide text-dark/55">
+                {user.role === 'admin' ? 'Host' : 'Guest'}
+              </p>
             </div>
           </div>
         </div>

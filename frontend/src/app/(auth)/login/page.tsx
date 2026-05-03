@@ -22,9 +22,8 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 function getRedirectPath(role: AuthResponse['user']['role']) {
-  if (role === 'owner') return '/owner/properties';
-  if (role === 'admin') return '/admin/analytics';
-  return '/user/bookings';
+  if (role === 'admin') return '/admin/properties';
+  return '/user/browse';
 }
 
 export default function LoginPage() {
@@ -70,7 +69,7 @@ export default function LoginPage() {
   return (
     <AuthLayout
       title="Welcome Back"
-      subtitle="Sign in to continue your bookings and hosting dashboard."
+      subtitle="Guests: browse stays, manage bookings, and pay with M-Pesa. Hosts: sign in with your admin account."
       switchLabel="Don't have an account?"
       switchHref={safeNextPath ? `/register?next=${encodeURIComponent(safeNextPath)}` : '/register'}
       switchText="Create one"

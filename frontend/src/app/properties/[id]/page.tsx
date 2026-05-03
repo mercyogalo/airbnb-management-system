@@ -3,10 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { PropertyBookingForm } from '@/components/booking/PropertyBookingForm';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
 import { formatCurrency, getReadableError } from '@/lib/utils';
 import type { Property } from '@/types';
@@ -16,6 +18,8 @@ const fallbackImage =
 
 export default function PropertyDetailsPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const { user, hydrated } = useAuth();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +55,9 @@ export default function PropertyDetailsPage() {
   useEffect(() => {
     setSelectedImageIndex(0);
   }, [galleryImages]);
+
+  const loginNext = `/properties/${params.id}`;
+  const canBookAsGuest = user?.role === 'user';
 
   if (loading) {
     return (
@@ -146,7 +153,7 @@ export default function PropertyDetailsPage() {
                   <span className="font-semibold text-secondary">Max Guests:</span> {property.maxGuests}
                 </p>
                 <p>
-                  <span className="font-semibold text-secondary">Hosted by:</span> {property.owner?.name ?? 'Verified Owner'}
+                  <span className="font-semibold text-secondary">Hosted by:</span> {property.owner?.name ?? 'StayEasy'}
                 </p>
               </div>
 
@@ -162,16 +169,41 @@ export default function PropertyDetailsPage() {
               ) : null}
             </article>
 
-            <aside className="rounded-2xl border border-secondary/10 bg-white p-5 shadow-soft">
+            <aside className="h-fit rounded-2xl border border-secondary/10 bg-white p-5 shadow-soft">
               <h2 className="text-xl font-semibold">Book this stay</h2>
-              <p className="mt-1 text-sm text-dark/70">Sign in to choose dates and complete your booking.</p>
+              <p className="mt-1 text-sm text-dark/70">
+                Pick dates and confirm. You can check availability before you sign in; booking requires a guest account.
+              </p>
 
-              <Link
-                href={`/login?next=${encodeURIComponent(`/properties/${property._id}`)}`}
-                className="btn-primary mt-4 inline-flex w-full justify-center"
-              >
-                Login to book now
-              </Link>
+              {!hydrated ? (
+                <p className="mt-4 text-sm text-dark/60">Loading...</p>
+              ) : canBookAsGuest ? (
+                <div className="mt-4">
+                  <PropertyBookingForm
+                    property={property}
+                    onSuccess={() => router.push('/user/bookings')}
+                  />
+                </div>
+              ) : user ? (
+                <p className="mt-4 rounded-xl bg-muted px-4 py-3 text-sm text-dark/75">
+                  Bookings are for guest accounts. Open the guest dashboard to browse and book, or register as a guest.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <Link
+                    href={`/login?next=${encodeURIComponent(loginNext)}`}
+                    className="btn-primary inline-flex w-full justify-center"
+                  >
+                    Log in to book
+                  </Link>
+                  <Link
+                    href={`/register?next=${encodeURIComponent(loginNext)}`}
+                    className="btn-ghost inline-flex w-full justify-center"
+                  >
+                    Create guest account
+                  </Link>
+                </div>
+              )}
             </aside>
           </div>
         </section>

@@ -38,16 +38,6 @@ export default function UserBookingsPage() {
     fetchBookings();
   }, []);
 
-  const updateStatus = async (id: string, status: Booking['status']) => {
-    try {
-      await api.put(`/bookings/${id}/status`, { status });
-      toast.success(`Booking marked as ${status}.`);
-      fetchBookings();
-    } catch (err) {
-      toast.error(getReadableError(err, 'Could not update booking status.'));
-    }
-  };
-
   const deleteBooking = async (id: string) => {
     try {
       await api.delete(`/bookings/${id}`);
@@ -72,17 +62,25 @@ export default function UserBookingsPage() {
                 View
               </button>
 
-              {booking.status === 'pending' ? (
+              {booking.status === 'awaiting_payment' ? (
                 <button
                   type="button"
                   className="btn-ghost !px-3 !py-1.5"
-                  onClick={() => updateStatus(booking._id, 'cancelled')}
+                  onClick={async () => {
+                    try {
+                      await api.put(`/bookings/${booking._id}/cancel`);
+                      toast.success('Booking cancelled.');
+                      fetchBookings();
+                    } catch (err) {
+                      toast.error(getReadableError(err, 'Could not cancel booking.'));
+                    }
+                  }}
                 >
                   Cancel
                 </button>
               ) : null}
 
-              {(booking.status === 'pending' || booking.status === 'cancelled') ? (
+              {(booking.status === 'awaiting_payment' || booking.status === 'cancelled' || booking.status === 'expired') ? (
                 <button
                   type="button"
                   className="btn-ghost !px-3 !py-1.5"

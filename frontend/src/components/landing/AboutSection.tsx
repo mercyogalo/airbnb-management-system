@@ -2,7 +2,7 @@ const stats = [
   { label: 'Total Properties', value: '1,250+' },
   { label: 'Cities Covered', value: '80+' },
   { label: 'Happy Guests', value: '24K+' },
-  { label: 'Verified Owners', value: '1,900+' },
+  { label: 'Happy guests', value: '1,900+' },
 ];
 
 export function AboutSection() {
@@ -12,7 +12,7 @@ export function AboutSection() {
         <div>
           <h2 className="text-3xl font-semibold sm:text-4xl">Built for guests who crave comfort and confidence</h2>
           <p className="mt-5 max-w-xl text-dark/75">
-            StayEasy brings travelers and trusted hosts together in one polished experience. From discovery to
+            StayEasy brings travelers and curated listings together in one polished experience. From discovery to
             checkout, every touchpoint is designed to feel calm, transparent, and fast.
           </p>
         </div>

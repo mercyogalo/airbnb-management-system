@@ -4,9 +4,8 @@ import { Document } from 'mongoose';
 export type UserDocument = User & Document;
 
 export enum UserRole {
-  ADMIN = 'admin',
-  OWNER = 'owner',
-  USER = 'user',
+  ADMIN = 'admin', // Single business account — manages all listings
+  USER = 'user', // Customers who browse and book
 }
 
 @Schema({ timestamps: true })

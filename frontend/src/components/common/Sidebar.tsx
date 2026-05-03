@@ -23,29 +23,24 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
-const navByRole = {
-  user: [
-    { href: '/user/browse', label: 'Browse Properties', icon: House },
-    { href: '/user/bookings', label: 'My Bookings', icon: Calendar },
-    { href: '/user/profile', label: 'Profile', icon: User },
-  ],
-  owner: [
-    { href: '/owner/properties', label: 'My Properties', icon: Building2 },
-    { href: '/owner/properties/new', label: 'Add Property', icon: Plus },
-    { href: '/owner/bookings', label: 'Bookings Received', icon: Calendar },
-    { href: '/owner/profile', label: 'Profile', icon: User },
-  ],
-  admin: [
-    { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-    { href: '/admin/users', label: 'All Users', icon: Users },
-    { href: '/admin/properties', label: 'All Properties', icon: Building2 },
-    { href: '/admin/profile', label: 'Profile', icon: User },
-  ],
-};
+const customerNav = [
+  { href: '/user/browse', label: 'Browse stays', icon: House },
+  { href: '/user/bookings', label: 'My bookings', icon: Calendar },
+  { href: '/user/profile', label: 'Profile', icon: User },
+];
+
+const adminNav = [
+  { href: '/admin/properties', label: 'Listings', icon: Building2 },
+  { href: '/admin/properties/new', label: 'Add listing', icon: Plus },
+  { href: '/admin/bookings', label: 'Bookings', icon: Calendar },
+  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/admin/users', label: 'Customers', icon: Users },
+  { href: '/admin/profile', label: 'Profile', icon: User },
+];
 
 export function Sidebar({ role, isOpen, onClose, onLogout }: SidebarProps) {
   const pathname = usePathname();
-  const navItems = navByRole[role] ?? navByRole.user;
+  const navItems = role === 'admin' ? adminNav : customerNav;
 
   return (
     <>
@@ -74,7 +69,14 @@ export function Sidebar({ role, isOpen, onClose, onLogout }: SidebarProps) {
 
         <nav className="space-y-2">
           {navItems.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            let active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            if (role === 'admin') {
+              if (item.href === '/admin/properties') {
+                active = pathname === '/admin/properties' || /^\/admin\/properties\/[^/]+\/edit/.test(pathname);
+              } else if (item.href === '/admin/properties/new') {
+                active = pathname === '/admin/properties/new';
+              }
+            }
             const Icon = item.icon;
 
             return (

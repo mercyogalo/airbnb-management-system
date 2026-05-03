@@ -119,7 +119,7 @@ export default function NewPropertyPage() {
     if (files.length === 0) return;
     try {
       const selected = await Promise.all(files.map(createSelectedImage));
-      // Always append — never replace — so owners can keep adding batches
+      // Always append — never replace — so you can add images in batches
       setGalleryImages((prev) => [...prev, ...selected]);
     } catch {
       toast.error('Could not load one or more gallery images. Please try again.');
@@ -174,6 +174,8 @@ export default function NewPropertyPage() {
         description: values.description,
         maxGuests: values.maxGuests,
         pricePerNight: values.pricePerNight,
+        bedrooms: 1,
+        bathrooms: 1,
         location: {
           address: values.address,
           city: values.city,
@@ -184,8 +186,8 @@ export default function NewPropertyPage() {
         images: uploadResponse.data.allImages,
       });
 
-      toast.success('Property submitted for review.');
-      router.push('/owner/properties');
+      toast.success('Listing published.');
+      router.push('/admin/properties');
     } catch (err) {
       setUploadingImages(false);
       toast.error(getReadableError(err, 'Could not create property.'));
@@ -199,7 +201,7 @@ export default function NewPropertyPage() {
       {/* Progress header */}
       <div className="rounded-2xl border border-secondary/10 bg-white p-5 shadow-soft">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Add New Property</h2>
+          <h2 className="text-2xl font-semibold">Add New Listing</h2>
           <span className="text-sm text-dark/70">Step {step} of 3</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -425,7 +427,7 @@ export default function NewPropertyPage() {
             </button>
           ) : (
             <button type="submit" className="btn-primary w-full" disabled={isBusy}>
-              {uploadingImages ? 'Uploading photos...' : isSubmitting ? 'Submitting...' : 'Submit Property'}
+              {uploadingImages ? 'Uploading photos...' : isSubmitting ? 'Submitting...' : 'Publish listing'}
             </button>
           )}
         </div>

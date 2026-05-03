@@ -24,7 +24,7 @@ export function AdminCharts({ roleData, propertyStatusData }: AdminChartsProps) 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
       <article className="rounded-2xl border border-secondary/10 bg-white p-5 shadow-soft">
-        <h3 className="text-xl font-semibold">Users by Role</h3>
+        <h3 className="text-xl font-semibold">Guests vs host</h3>
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

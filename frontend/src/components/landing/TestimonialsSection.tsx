@@ -11,7 +11,7 @@ const testimonials = [
   },
   {
     name: 'Priya S.',
-    quote: 'Great customer support and wonderful hosts. I found my new go-to app for short stays.',
+    quote: 'Great customer support and beautiful listings. I found my new go-to app for short stays.',
     rating: 5,
   },
 ];

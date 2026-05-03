@@ -21,7 +21,6 @@ export class CreateBookingDto {
   @IsString()
   specialRequests?: string;
 
-  
   @IsString()
   @Matches(/^\+?[0-9\s\-().]{7,20}$/, {
     message: 'Please provide a valid phone number.',

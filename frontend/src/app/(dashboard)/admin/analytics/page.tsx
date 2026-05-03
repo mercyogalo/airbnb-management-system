@@ -6,7 +6,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { StatCard } from '@/components/dashboard/StatCard';
 import api from '@/lib/axios';
 import { formatDate, getReadableError } from '@/lib/utils';
-import type { Booking, Property, UserRole } from '@/types';
+import type { Booking, Property } from '@/types';
 
 const AdminCharts = dynamic(
   () => import('@/components/dashboard/AdminCharts').then((mod) => mod.AdminCharts),
@@ -28,13 +28,13 @@ export default function AdminAnalyticsPage() {
       setError(null);
 
       try {
-        const propertiesResponse = await api.get<Property[]>('/properties');
-        const bookingResponses = await Promise.all(
-          propertiesResponse.data.map((property) => api.get<Booking[]>(`/bookings/property/${property._id}`)),
-        );
+        const [propertiesResponse, bookingsResponse] = await Promise.all([
+          api.get<Property[]>('/properties/admin/all'),
+          api.get<Booking[]>('/bookings/all'),
+        ]);
 
         setProperties(propertiesResponse.data);
-        setBookings(bookingResponses.flatMap((response) => response.data));
+        setBookings(bookingsResponse.data);
       } catch (err) {
         setError(getReadableError(err, 'Could not load analytics data.'));
       } finally {
@@ -46,34 +46,12 @@ export default function AdminAnalyticsPage() {
   }, []);
 
   const roleData = useMemo(() => {
-    const roleCount: Record<UserRole, number> = {
-      user: 0,
-      owner: 0,
-      admin: 1,
-    };
-
-    const seen = new Set<string>();
-
-    for (const property of properties) {
-      const ownerId = property.owner?._id;
-      if (!ownerId || seen.has(ownerId)) continue;
-      seen.add(ownerId);
-      roleCount.owner += 1;
-    }
-
-    for (const booking of bookings) {
-      const guestId = booking.guest?._id;
-      if (!guestId || seen.has(guestId)) continue;
-      seen.add(guestId);
-      roleCount.user += 1;
-    }
-
+    const uniqueGuests = new Set(bookings.map((b) => b.guest?._id).filter(Boolean)).size;
     return [
-      { name: 'Users', value: roleCount.user },
-      { name: 'Owners', value: roleCount.owner },
-      { name: 'Admins', value: roleCount.admin },
+      { name: 'Guests (booked)', value: uniqueGuests },
+      { name: 'Host account', value: 1 },
     ];
-  }, [bookings, properties]);
+  }, [bookings]);
 
   const uniqueGuests = useMemo(() => {
     return new Set(bookings.map((booking) => booking.guest?._id).filter(Boolean)).size;
@@ -87,9 +65,8 @@ export default function AdminAnalyticsPage() {
 
   const propertyStatusData = useMemo(
     () => [
-      { status: 'pending', count: properties.filter((property) => property.status === 'pending').length },
-      { status: 'approved', count: properties.filter((property) => property.status === 'approved').length },
-      { status: 'rejected', count: properties.filter((property) => property.status === 'rejected').length },
+      { status: 'active', count: properties.filter((property) => property.status === 'active').length },
+      { status: 'inactive', count: properties.filter((property) => property.status === 'inactive').length },
     ],
     [properties],
   );

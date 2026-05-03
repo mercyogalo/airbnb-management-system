@@ -17,7 +17,7 @@ const body = Manrope({
 
 export const metadata: Metadata = {
   title: "StayEasy | Your Next Stay, Sorted",
-  description: "A complete booking platform for guests, owners, and admins.",
+  description: 'Book curated stays with availability checks and M-Pesa payments.',
 };
 
 export default function RootLayout({

@@ -1,20 +1,19 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-type AppRole = 'user' | 'owner' | 'admin';
+type AppRole = 'user' | 'admin';
 
 const TOKEN_COOKIE = 'stayeasy_token';
 const ROLE_COOKIE = 'stayeasy_role';
 const AUTH_PAGES = ['/login', '/register'];
 
 function getDashboardByRole(role: AppRole) {
-  if (role === 'owner') return '/owner/properties';
-  if (role === 'admin') return '/admin/analytics';
-  return '/user/bookings';
+  if (role === 'admin') return '/admin/properties';
+  return '/user/browse';
 }
 
 function isProtectedRoute(pathname: string) {
-  return pathname.startsWith('/user') || pathname.startsWith('/owner') || pathname.startsWith('/admin');
+  return pathname.startsWith('/user') || pathname.startsWith('/admin');
 }
 
 function canAccessRouteByRole(role: AppRole, pathname: string) {
@@ -22,12 +21,8 @@ function canAccessRouteByRole(role: AppRole, pathname: string) {
     return role === 'admin';
   }
 
-  if (pathname.startsWith('/owner')) {
-    return role === 'owner' || role === 'admin';
-  }
-
   if (pathname.startsWith('/user')) {
-    return role === 'user' || role === 'owner' || role === 'admin';
+    return role === 'user';
   }
 
   return true;
@@ -35,8 +30,18 @@ function canAccessRouteByRole(role: AppRole, pathname: string) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Legacy URLs from the old multi-host model
+  if (pathname.startsWith('/owner')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin/properties';
+    return NextResponse.redirect(url);
+  }
+
   const token = request.cookies.get(TOKEN_COOKIE)?.value;
-  const role = request.cookies.get(ROLE_COOKIE)?.value as AppRole | undefined;
+  const rawRole = request.cookies.get(ROLE_COOKIE)?.value;
+  const role: AppRole | undefined =
+    rawRole === 'admin' || rawRole === 'owner' ? 'admin' : rawRole === 'user' ? 'user' : undefined;
   const isAuthPage = AUTH_PAGES.some((path) => pathname.startsWith(path));
   const isProtected = isProtectedRoute(pathname);
 
@@ -60,5 +65,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/login', '/register', '/user/:path*', '/owner/:path*', '/admin/:path*'],
+  matcher: ['/login', '/register', '/user/:path*', '/admin/:path*', '/owner/:path*'],
 };

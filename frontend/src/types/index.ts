@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'owner' | 'user';
+export type UserRole = 'admin' | 'user';
 
 export interface User {
   id: string;
@@ -14,6 +14,16 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
+}
+
+export type PropertyListingStatus = 'active' | 'inactive';
+
+export interface BlockedPeriod {
+  _id?: string;
+  start: string;
+  end: string;
+  reason: string;
+  type: 'full_day' | 'time_range';
 }
 
 export interface Property {
@@ -32,15 +42,18 @@ export interface Property {
   pricePerNight: number;
   mainImage?: string;
   maxGuests: number;
+  bedrooms?: number;
+  bathrooms?: number;
   images: string[];
   rules: string[];
-  status: 'pending' | 'approved' | 'rejected';
+  amenities?: string[];
+  status: PropertyListingStatus;
   owner: {
     _id: string;
     name: string;
     email: string;
   };
-  blockedDates: string[];
+  blockedPeriods?: BlockedPeriod[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -57,7 +70,11 @@ export interface Booking {
   checkOut: string;
   guests: number;
   totalPrice: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'awaiting_payment' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
+  paymentMethod?: 'mpesa';
+  paymentReference?: string;
+  transactionId?: string;
+  paidAt?: string;
   specialRequests?: string;
   createdAt: string;
   updatedAt?: string;

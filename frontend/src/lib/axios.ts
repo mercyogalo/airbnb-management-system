@@ -2,7 +2,9 @@ import axios from 'axios';
 import { clearAuthSession, getStoredToken } from '@/lib/auth';
 
 function resolveApiBaseUrl() {
-  const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const configured =
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_BACKEND_URL?.trim();
 
   if (!configured) {
     return 'http://localhost:3000/api/v1';

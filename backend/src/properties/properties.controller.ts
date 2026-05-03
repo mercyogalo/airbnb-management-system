@@ -1,6 +1,9 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller, Get, Post, Put, Delete,
+  Param, Body, Query, UseGuards,
+} from '@nestjs/common';
 import { PropertiesService } from './properties.service';
-import { CreatePropertyDto } from './dto/create-property.dto';
+import { CreatePropertyDto, AddBlockedPeriodDto, RemoveBlockedPeriodDto } from './dto/create-property.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -13,20 +16,31 @@ import { PropertyStatus } from './schemas/property.schema';
 export class PropertiesController {
   constructor(private propertiesService: PropertiesService) {}
 
-  // Public — browse approved properties
+  // ── Public ────────────────────────────────────────────────────
   @Get()
-  findAll(@Query() query: { city?: string; minPrice?: number; maxPrice?: number; guests?: number }) {
-    return this.propertiesService.findAll(query);
+  findAll(
+    @Query() query: {
+      city?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      guests?: number;
+      checkIn?: string;
+      checkOut?: string;
+    },
+  ) {
+    return this.propertiesService.findAll({
+      ...query,
+      checkIn: query.checkIn ? new Date(query.checkIn) : undefined,
+      checkOut: query.checkOut ? new Date(query.checkOut) : undefined,
+    });
   }
 
-  // Admin — browse all properties (pending, approved, rejected)
+  // Static GET routes before @Get(':id')
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  findAllForAdmin(
-    @Query() query: { city?: string; minPrice?: number; maxPrice?: number; guests?: number; status?: PropertyStatus },
-  ) {
-    return this.propertiesService.findAllForAdmin(query);
+  findAllForAdmin(@Query('status') status?: PropertyStatus) {
+    return this.propertiesService.findAllForAdmin({ status });
   }
 
   @Get(':id')
@@ -34,46 +48,58 @@ export class PropertiesController {
     return this.propertiesService.findOne(id);
   }
 
-  // Owner — manage own properties
+  // ── Admin only — single host account manages all listings ─────
+  @Put(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  setStatus(@Param('id') id: string, @Body('status') status: PropertyStatus) {
+    return this.propertiesService.setStatus(id, status);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   create(@Body() dto: CreatePropertyDto, @CurrentUser() user: UserDocument) {
     return this.propertiesService.create(dto, user);
   }
 
-  @Get('owner/my')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
-  myProperties(@CurrentUser() user: UserDocument) {
-    return this.propertiesService.findByOwner(user._id.toString());
-  }
-
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() dto: Partial<CreatePropertyDto>, @CurrentUser() user: UserDocument) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreatePropertyDto>,
+    @CurrentUser() user: UserDocument,
+  ) {
     return this.propertiesService.update(id, dto, user);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   delete(@Param('id') id: string, @CurrentUser() user: UserDocument) {
     return this.propertiesService.delete(id, user);
   }
 
-  // Admin — verify properties
-  @Put(':id/status')
+  @Post(':id/block-periods')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  updateStatus(@Param('id') id: string, @Body('status') status: PropertyStatus) {
-    return this.propertiesService.updateStatus(id, status);
+  addBlockedPeriods(
+    @Param('id') id: string,
+    @Body() dto: AddBlockedPeriodDto,
+    @CurrentUser() user: UserDocument,
+  ) {
+    return this.propertiesService.addBlockedPeriods(id, dto, user);
   }
 
-  // Owner — block dates on calendar
-  @Post(':id/block-dates')
+  @Delete(':id/block-periods')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
-  blockDates(@Param('id') id: string, @Body('dates') dates: Date[], @CurrentUser() user: UserDocument) {
-    return this.propertiesService.blockDates(id, dates, user);
+  @Roles(UserRole.ADMIN)
+  removeBlockedPeriods(
+    @Param('id') id: string,
+    @Body() dto: RemoveBlockedPeriodDto,
+    @CurrentUser() user: UserDocument,
+  ) {
+    return this.propertiesService.removeBlockedPeriods(id, dto.periodIds, user);
   }
 }

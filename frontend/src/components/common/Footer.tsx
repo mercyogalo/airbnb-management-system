@@ -6,11 +6,11 @@ export function Footer() {
       <div className="container-shell grid gap-8 py-12 md:grid-cols-2 lg:grid-cols-4">
         <div>
           <h3 className="text-2xl font-semibold !text-white">StayEasy</h3>
-          <p className="mt-3 text-sm text-white/80">Find curated stays and manage bookings without friction.</p>
+          <p className="mt-3 text-sm text-white/80">Curated stays, clear availability, and M-Pesa checkout for guests.</p>
         </div>
 
         <div>
-          <h4 className="text-lg font-semibold !text-white">Quick Links</h4>
+          <h4 className="text-lg font-semibold !text-white">Quick links</h4>
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>
               <a href="#about">About</a>
@@ -25,16 +25,16 @@ export function Footer() {
         </div>
 
         <div>
-          <h4 className="text-lg font-semibold !text-white">For Owners</h4>
+          <h4 className="text-lg font-semibold !text-white">Guests</h4>
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>
-              <Link href="/register">List Property</Link>
+              <Link href="/register">Sign up</Link>
             </li>
             <li>
-              <Link href="/login">Owner Dashboard</Link>
+              <Link href="/login">Log in</Link>
             </li>
             <li>
-              <Link href="/owner/bookings">Bookings Received</Link>
+              <Link href="/properties">Browse stays</Link>
             </li>
           </ul>
         </div>
@@ -43,8 +43,8 @@ export function Footer() {
           <h4 className="text-lg font-semibold !text-white">Contact</h4>
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>support@stayeasy.com</li>
-            <li>+1 (555) 010-2026</li>
-            <li>San Francisco, CA</li>
+            <li>+254 (0) 700 000 000</li>
+            <li>Nairobi, Kenya</li>
           </ul>
         </div>
       </div>

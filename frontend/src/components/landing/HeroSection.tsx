@@ -10,23 +10,21 @@ export function HeroSection() {
 
       <div className="container-shell py-20 text-center text-white">
         <h1 className="mx-auto max-w-4xl text-4xl font-semibold !text-white sm:text-5xl lg:text-6xl">
-          Discover Exceptional Stays Crafted for Modern Travelers
+          Discover exceptional stays — book in minutes
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-base text-white/90 sm:text-lg">
-          Browse curated homes, book in minutes, and unlock seamless hosting experiences.
+          Browse listings, check real-time availability, and confirm your stay with M-Pesa.
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <a href="#properties" className="btn-primary">
-            Explore Properties
+            Explore properties
           </a>
           <Link href="/register" className="btn-ghost border-white/50 text-white hover:bg-white/10">
-            List Your Property
+            Sign up to book
           </Link>
         </div>
       </div>
-
-   
     </section>
   );
 }

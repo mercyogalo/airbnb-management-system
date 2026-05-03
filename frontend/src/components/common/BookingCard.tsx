@@ -8,7 +8,6 @@ interface BookingCardProps {
   role?: UserRole;
   onCancel?: () => void;
   onDelete?: () => void;
-  onConfirm?: () => void;
   onComplete?: () => void;
   onView?: () => void;
 }
@@ -18,7 +17,6 @@ export function BookingCard({
   role = 'user',
   onCancel,
   onDelete,
-  onConfirm,
   onComplete,
   onView,
 }: BookingCardProps) {
@@ -49,25 +47,19 @@ export function BookingCard({
           </button>
         ) : null}
 
-        {role === 'user' && booking.status === 'pending' && onCancel ? (
+        {role === 'user' && booking.status === 'awaiting_payment' && onCancel ? (
           <button type="button" className="btn-ghost" onClick={onCancel}>
             Cancel
           </button>
         ) : null}
 
-        {(booking.status === 'pending' || booking.status === 'cancelled') && onDelete ? (
+        {(booking.status === 'awaiting_payment' || booking.status === 'cancelled' || booking.status === 'expired') && onDelete ? (
           <button type="button" className="btn-ghost" onClick={onDelete}>
             Delete
           </button>
         ) : null}
 
-        {(role === 'owner' || role === 'admin') && booking.status === 'pending' && onConfirm ? (
-          <button type="button" className="btn-primary" onClick={onConfirm}>
-            Confirm
-          </button>
-        ) : null}
-
-        {(role === 'owner' || role === 'admin') && booking.status === 'confirmed' && onComplete ? (
+        {role === 'admin' && booking.status === 'confirmed' && onComplete ? (
           <button type="button" className="btn-primary" onClick={onComplete}>
             Complete
           </button>

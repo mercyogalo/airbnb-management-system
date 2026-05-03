@@ -28,12 +28,16 @@ export function normalizeAuthUser(user: AuthUserInput): User {
     throw new Error('Invalid user payload: missing id');
   }
 
+  // Legacy sessions used `owner`; host is now a single `admin` account.
+  const rawRole = user.role as string;
+  const role: User['role'] = rawRole === 'owner' ? 'admin' : (user.role as User['role']);
+
   return {
     id,
     _id: user._id ?? id,
     name: user.name,
     email: user.email,
-    role: user.role,
+    role,
     isActive: user.isActive,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,

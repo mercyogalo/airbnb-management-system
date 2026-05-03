@@ -34,7 +34,7 @@ export function SampleProperties() {
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
             <h2 className="text-3xl font-semibold sm:text-4xl">Explore Our Properties</h2>
-            <p className="mt-2 text-dark/70">Handpicked homes from verified owners across the most loved cities.</p>
+            <p className="mt-2 text-dark/70">Handpicked homes across the most loved cities.</p>
           </div>
         </div>
 

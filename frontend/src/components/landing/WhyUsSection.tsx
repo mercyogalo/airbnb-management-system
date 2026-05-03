@@ -19,7 +19,7 @@ const features = [
   {
     icon: ShieldCheck,
     title: 'Best Price Guarantee',
-    text: 'We keep rates fair with owner-direct pricing and no hidden fees.',
+    text: 'Straightforward pricing with no hidden fees — what you see is what you pay.',
   },
 ];
 

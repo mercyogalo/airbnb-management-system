@@ -25,7 +25,7 @@ const imageFileFilter = (_: unknown, file: Express.Multer.File, cb: (error: Erro
 
 @Controller('upload')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.OWNER, UserRole.ADMIN)
+@Roles(UserRole.ADMIN)
 export class UploadController {
   constructor(private uploadService: UploadService) {}
 

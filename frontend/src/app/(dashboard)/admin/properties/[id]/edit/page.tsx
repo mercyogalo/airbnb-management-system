@@ -8,9 +8,10 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { BlockedPeriodsPanel } from '@/components/admin/BlockedPeriodsPanel';
 import api from '@/lib/axios';
 import { getReadableError } from '@/lib/utils';
-import type { Property } from '@/types';
+import type { BlockedPeriod, Property } from '@/types';
 
 const editSchema = z.object({
   name: z.string().min(2, 'Property name is required.'),
@@ -69,6 +70,7 @@ export default function EditPropertyPage() {
   const [removedExistingGallery, setRemovedExistingGallery] = useState<Set<string>>(new Set());
 
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [blockedPeriods, setBlockedPeriods] = useState<BlockedPeriod[]>([]);
 
   const {
     register,
@@ -111,6 +113,7 @@ export default function EditPropertyPage() {
         // Gallery = all images except the main cover
         const gallery = (property.images ?? []).filter((img) => img !== property.mainImage);
         setExistingGalleryImages(gallery);
+        setBlockedPeriods(property.blockedPeriods ?? []);
       } catch (err) {
         toast.error(getReadableError(err, 'Could not load property details.'));
       }
@@ -118,6 +121,15 @@ export default function EditPropertyPage() {
 
     bootstrap();
   }, [params.id, reset]);
+
+  const reloadBlockedPeriods = async () => {
+    try {
+      const response = await api.get<Property>(`/properties/${params.id}`);
+      setBlockedPeriods(response.data.blockedPeriods ?? []);
+    } catch {
+      /* ignore */
+    }
+  };
 
   // ── Image handlers ──────────────────────────────────────────────
 
@@ -138,7 +150,7 @@ export default function EditPropertyPage() {
     if (files.length === 0) return;
     try {
       const selected = await Promise.all(files.map(createSelectedImage));
-      // Always append so owners can keep adding batches
+      // Always append so you can add images in batches
       setNewGalleryImages((prev) => [...prev, ...selected]);
     } catch {
       toast.error('Could not preview one or more images. Please try again.');
@@ -228,8 +240,8 @@ export default function EditPropertyPage() {
         images: [resolvedMainImage, ...resolvedGalleryImages].filter(Boolean),
       });
 
-      toast.success('Property updated.');
-      router.push('/owner/properties');
+      toast.success('Listing updated.');
+      router.push('/admin/properties');
     } catch (err) {
       setUploadingImages(false);
       toast.error(getReadableError(err, 'Could not update property.'));
@@ -243,7 +255,7 @@ export default function EditPropertyPage() {
   return (
     <section className="space-y-5">
       <div className="rounded-2xl border border-secondary/10 bg-white p-6 shadow-soft">
-        <h2 className="text-2xl font-semibold">Edit Property</h2>
+        <h2 className="text-2xl font-semibold">Edit Listing</h2>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -466,11 +478,13 @@ export default function EditPropertyPage() {
           </div>
         </div>
 
+        <BlockedPeriodsPanel propertyId={params.id} periods={blockedPeriods} onUpdated={reloadBlockedPeriods} />
+
         {/* ── Actions ─────────────────────────────────────────────── */}
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => router.push('/admin/properties')}
             className="btn-ghost w-full"
             disabled={isBusy}
           >
