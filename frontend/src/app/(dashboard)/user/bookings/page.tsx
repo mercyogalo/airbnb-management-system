@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { BookingsTable } from '@/components/dashboard/BookingsTable';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import api from '@/lib/axios';
-import { formatDate} from '@/lib/utils';
+import { formatDate, getReadableError} from '@/lib/utils';
 import type { Booking } from '@/types';
 
 const Modal = dynamic(() => import('@/components/common/Modal').then((mod) => mod.Modal), {

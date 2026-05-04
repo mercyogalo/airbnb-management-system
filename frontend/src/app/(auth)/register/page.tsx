@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -27,7 +27,7 @@ function getRedirectPath(role: UserRole) {
   return '/user/browse';
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -46,11 +46,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-    },
+    defaultValues: { name: '', email: '', password: '' },
   });
 
   const onSubmit = async (values: RegisterFormValues) => {
@@ -78,25 +74,19 @@ export default function RegisterPage() {
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-medium text-dark/85">
-            Full name
-          </label>
+          <label htmlFor="name" className="mb-1 block text-sm font-medium text-dark/85">Full name</label>
           <input id="name" type="text" className="field" placeholder="Jane Doe" {...register('name')} />
           {errors.name ? <p className="mt-1 text-xs text-red-600">{errors.name.message}</p> : null}
         </div>
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-dark/85">
-            Email
-          </label>
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-dark/85">Email</label>
           <input id="email" type="email" className="field" placeholder="you@example.com" {...register('email')} />
           {errors.email ? <p className="mt-1 text-xs text-red-600">{errors.email.message}</p> : null}
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium text-dark/85">
-            Password
-          </label>
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-dark/85">Password</label>
           <input id="password" type="password" className="field" placeholder="••••••••" {...register('password')} />
           {errors.password ? <p className="mt-1 text-xs text-red-600">{errors.password.message}</p> : null}
         </div>
@@ -110,5 +100,13 @@ export default function RegisterPage() {
         </button>
       </form>
     </AuthLayout>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner className="min-h-screen" label="Loading..." />}>
+      <RegisterForm />
+    </Suspense>
   );
 }

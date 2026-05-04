@@ -6,7 +6,6 @@ import { PropertyBookingForm } from '@/components/booking/PropertyBookingForm';
 import { PropertyCard } from '@/components/common/PropertyCard';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useProperties } from '@/hooks/useProperties';
-import { getReadableError } from '@/lib/utils';
 import type { Property } from '@/types';
 
 const Modal = dynamic(() => import('@/components/common/Modal').then((mod) => mod.Modal), {
