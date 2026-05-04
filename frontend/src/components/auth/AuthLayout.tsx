@@ -1,5 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/common/Logo';
 
 interface AuthLayoutProps {
   title: string;
@@ -38,12 +40,11 @@ export function AuthLayout({
 
       <div className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md space-y-6">
-          <Link href="/" className="inline-block text-3xl font-bold text-secondary">
-            StayEasy
-          </Link>
-          <Link href="/" className="inline-block text-sm font-medium text-dark/70 underline-offset-2 hover:text-secondary hover:underline">
+          <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-dark/70 hover:text-secondary">
+            <ArrowLeft size={16} />
             Back to Home
           </Link>
+          <Logo size={58} className="rounded-full object-cover" priority />
           <div>
             <h1 className="text-3xl font-semibold">{title}</h1>
             <p className="mt-2 text-sm text-dark/70">{subtitle}</p>

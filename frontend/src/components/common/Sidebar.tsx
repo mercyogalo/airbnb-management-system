@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BarChart3,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types';
+import { Logo } from '@/components/common/Logo';
 
 interface SidebarProps {
   role: UserRole;
@@ -59,9 +59,7 @@ export function Sidebar({ role, isOpen, onClose, onLogout }: SidebarProps) {
         )}
       >
         <div className="mb-8 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-secondary">
-            StayEasy
-          </Link>
+          <Logo size={50} className="h-[50px] w-[50px] rounded-full object-cover" />
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-secondary lg:hidden">
             <X size={18} />
           </button>

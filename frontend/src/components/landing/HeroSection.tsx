@@ -17,7 +17,7 @@ export function HeroSection() {
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <a href="#properties" className="btn-primary">
+          <a href="/#properties" className="btn-primary">
             Explore properties
           </a>
           <Link href="/register" className="btn-ghost border-white/50 text-white hover:bg-white/10">

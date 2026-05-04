@@ -55,7 +55,7 @@ export class PaymentsService {
     return this.initiateMpesa(populatedBooking, dto, user);
   }
 
-  // ── M-Pesa STK Push ───────────────────────────────────────────
+  // M-Pesa STK Push
   private async initiateMpesa(
     booking: PopulatedBookingDocument,
     dto: InitiatePaymentDto,
@@ -84,7 +84,7 @@ export class PaymentsService {
     });
 
     // Update booking with payment ref
-    booking.paymentMethod  = PaymentMethod.MPESA;
+    booking.paymentMethod    = PaymentMethod.MPESA;
     booking.paymentReference = checkoutRequestId;
     await booking.save();
 
@@ -111,13 +111,12 @@ export class PaymentsService {
     payment.rawCallbackPayload = JSON.stringify(payload);
 
     if (resultCode === 0) {
-      // Success
       const items: any[] = stk.CallbackMetadata?.Item ?? [];
       const get = (name: string) => items.find((i: any) => i.Name === name)?.Value;
 
-      payment.status              = PaymentStatus.SUCCESS;
-      payment.mpesaReceiptNumber  = get('MpesaReceiptNumber');
-      payment.paidAt              = new Date();
+      payment.status             = PaymentStatus.SUCCESS;
+      payment.mpesaReceiptNumber = get('MpesaReceiptNumber');
+      payment.paidAt             = new Date();
 
       await payment.save();
       await this.confirmBooking(
@@ -156,25 +155,25 @@ export class PaymentsService {
     const property = booking.property as PropertyDocument;
 
     await this.mailService.sendBookingConfirmedReceipt({
-      guestName: booking.guestName,
-      guestEmail: booking.guestEmail,
-      propertyName: property.name,
+      guestName:       booking.guestName,
+      guestEmail:      booking.guestEmail,
+      propertyName:    property.name,
       propertyAddress: `${property.location.address}, ${property.location.city}`,
-      checkIn: booking.checkIn,
-      checkOut: booking.checkOut,
-      guests: booking.guests,
-      totalPrice: booking.totalPrice,
-      currency: 'KES',
-      bookingId: booking._id.toString(),
+      checkIn:         booking.checkIn,
+      checkOut:        booking.checkOut,
+      guests:          booking.guests,
+      totalPrice:      booking.totalPrice,
+      currency:        'KES',
+      bookingId:       booking._id.toString(),
       transactionId,
-      paymentMethod: method,
-      paidAt: booking.paidAt,
+      paymentMethod:   method,
+      paidAt:          booking.paidAt,
     });
 
     this.logger.log(`Booking ${bookingId} confirmed via ${method}`);
   }
 
-  // ── Handle failed payment ──────────────────────────────────────
+  // Handle failed payment
   private async handlePaymentFailed(bookingId: string): Promise<void> {
     const booking = await this.bookingModel
       .findById(bookingId)
@@ -183,18 +182,29 @@ export class PaymentsService {
     if (!booking) return;
 
     const property = booking.property as PropertyDocument;
-    const appUrl = process.env.APP_URL ?? '';
+    const appUrl   = process.env.APP_URL ?? '';
 
     await this.mailService.sendPaymentFailed({
-      guestName: booking.guestName,
-      guestEmail: booking.guestEmail,
+      guestName:    booking.guestName,
+      guestEmail:   booking.guestEmail,
       propertyName: property.name,
-      bookingId: booking._id.toString(),
-      retryUrl: `${appUrl}/bookings/${booking._id}/pay`,
+      bookingId:    booking._id.toString(),
+      retryUrl:     `${appUrl}/bookings/${booking._id}/pay`,
     });
   }
 
-  // Get all payments for admin
+  // Get booking payment status (for frontend polling)
+  async getBookingPaymentStatus(bookingId: string) {
+    const booking = await this.bookingModel
+      .findById(bookingId)
+      .select('status');
+
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    return { status: booking.status };
+  }
+
+  // Admin: get all payments 
   async findAll() {
     return this.paymentModel
       .find()
@@ -202,7 +212,7 @@ export class PaymentsService {
       .sort({ createdAt: -1 });
   }
 
-  // Get payment for a specific booking
+  // Guest: payments for a specific booking 
   async findByBooking(bookingId: string) {
     return this.paymentModel
       .find({ booking: new Types.ObjectId(bookingId) })

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Sidebar } from '@/components/common/Sidebar';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { Logo } from '@/components/common/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import type { UserRole } from '@/types';
 
@@ -86,14 +87,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <header className="sticky top-0 z-30 border-b border-secondary/10 bg-white/95 backdrop-blur">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="rounded-lg p-2 text-secondary lg:hidden"
-            aria-label="Open sidebar"
-          >
-            <Menu size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="rounded-lg p-2 text-secondary lg:hidden"
+              aria-label="Open sidebar"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="hidden lg:block">
+              <Logo size={38} className="h-[38px] w-[38px] rounded-full object-cover" />
+            </div>
+          </div>
           <h1 className="text-lg font-semibold sm:text-xl">{pageTitle}</h1>
           <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-bold uppercase text-white">

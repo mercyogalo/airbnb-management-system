@@ -1,11 +1,12 @@
 import Link from 'next/link';
+import { Logo } from '@/components/common/Logo';
 
 export function Footer() {
   return (
     <footer className="bg-secondary text-white">
       <div className="container-shell grid gap-8 py-12 md:grid-cols-2 lg:grid-cols-4">
         <div>
-          <h3 className="text-2xl font-semibold !text-white">StayEasy</h3>
+          <Logo size={52} className="h-[52px] w-[52px] rounded-full object-cover" />
           <p className="mt-3 text-sm text-white/80">Curated stays, clear availability, and M-Pesa checkout for guests.</p>
         </div>
 
@@ -13,13 +14,13 @@ export function Footer() {
           <h4 className="text-lg font-semibold !text-white">Quick links</h4>
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>
-              <a href="#about">About</a>
+              <Link href="/#about">About</Link>
             </li>
             <li>
-              <a href="#properties">Properties</a>
+              <Link href="/#properties">Properties</Link>
             </li>
             <li>
-              <a href="#testimonials">Testimonials</a>
+              <Link href="/#testimonials">Testimonials</Link>
             </li>
           </ul>
         </div>

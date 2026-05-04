@@ -20,24 +20,29 @@ import type { UserDocument } from '../users/schemas/user.schema';
 export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
 
-  // ── Guest: initiate payment for their booking ─────────────────
+  // Guest: initiate payment for their booking 
   @Post('initiate')
   @UseGuards(JwtAuthGuard)
   initiatePayment(@Body() dto: InitiatePaymentDto, @CurrentUser() user: UserDocument) {
     return this.paymentsService.initiatePayment(dto, user);
   }
 
-  // ── M-Pesa Daraja callback (public — called by Safaricom) ─────
-  // Safaricom POSTs to this URL — no auth header from their side
+  // M-Pesa Daraja callback (public — called by Safaricom) 
   @Post('mpesa/callback')
   @HttpCode(200)
   async mpesaCallback(@Body() payload: any) {
     await this.paymentsService.handleMpesaCallback(payload);
-    // Daraja expects this exact shape
     return { ResultCode: 0, ResultDesc: 'Accepted' };
   }
 
-  // ── Admin: list all payments 
+  // Guest: poll booking payment status 
+  @Get('status/:bookingId')
+  @UseGuards(JwtAuthGuard)
+  getBookingPaymentStatus(@Param('bookingId') bookingId: string) {
+    return this.paymentsService.getBookingPaymentStatus(bookingId);
+  }
+
+  // Admin: list all payments 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -45,7 +50,7 @@ export class PaymentsController {
     return this.paymentsService.findAll();
   }
 
-  // ── Admin / guest: payments for a booking 
+  // Guest: payments for a specific booking 
   @Get('booking/:bookingId')
   @UseGuards(JwtAuthGuard)
   findByBooking(@Param('bookingId') bookingId: string) {

@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { BookingsTable } from '@/components/dashboard/BookingsTable';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -20,23 +20,23 @@ export default function UserBookingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Booking | null>(null);
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.get<Booking[]>('/bookings/my');
+      const response = await api.get<Booking[]>('/user/bookings');
       setBookings(response.data);
     } catch (err) {
       setError(getReadableError(err, 'Could not load your bookings.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [fetchBookings]);
 
   const deleteBooking = async (id: string) => {
     try {
@@ -54,48 +54,54 @@ export default function UserBookingsPage() {
       {error ? <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
 
       {!loading && !error ? (
-        <BookingsTable
-          bookings={bookings}
-          actionCell={(booking) => (
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn-ghost !px-3 !py-1.5" onClick={() => setSelected(booking)}>
-                View
-              </button>
-
-              {booking.status === 'awaiting_payment' ? (
-                <button
-                  type="button"
-                  className="btn-ghost !px-3 !py-1.5"
-                  onClick={async () => {
-                    try {
-                      await api.put(`/bookings/${booking._id}/cancel`);
-                      toast.success('Booking cancelled.');
-                      fetchBookings();
-                    } catch (err) {
-                      toast.error(getReadableError(err, 'Could not cancel booking.'));
-                    }
-                  }}
-                >
-                  Cancel
+        bookings.length > 0 ? (
+          <BookingsTable
+            bookings={bookings}
+            actionCell={(booking) => (
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn-ghost !px-3 !py-1.5" onClick={() => setSelected(booking)}>
+                  View
                 </button>
-              ) : null}
 
-              {(booking.status === 'awaiting_payment' || booking.status === 'cancelled' || booking.status === 'expired') ? (
-                <button
-                  type="button"
-                  className="btn-ghost !px-3 !py-1.5"
-                  onClick={() => deleteBooking(booking._id)}
-                >
-                  Delete
-                </button>
-              ) : null}
+                {booking.status === 'awaiting_payment' ? (
+                  <button
+                    type="button"
+                    className="btn-ghost !px-3 !py-1.5"
+                    onClick={async () => {
+                      try {
+                        await api.put(`/bookings/${booking._id}/cancel`);
+                        toast.success('Booking cancelled.');
+                        fetchBookings();
+                      } catch (err) {
+                        toast.error(getReadableError(err, 'Could not cancel booking.'));
+                      }
+                    }}
+                  >
+                    Cancel
+                  </button>
+                ) : null}
 
-              <Link href={`/user/bookings/${booking._id}`} className="btn-primary !px-3 !py-1.5">
-                Open
-              </Link>
-            </div>
-          )}
-        />
+                {(booking.status === 'awaiting_payment' || booking.status === 'cancelled' || booking.status === 'expired') ? (
+                  <button
+                    type="button"
+                    className="btn-ghost !px-3 !py-1.5"
+                    onClick={() => deleteBooking(booking._id)}
+                  >
+                    Delete
+                  </button>
+                ) : null}
+
+                <Link href={`/user/bookings/${booking._id}`} className="btn-primary !px-3 !py-1.5">
+                  Open
+                </Link>
+              </div>
+            )}
+          />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-secondary/20 bg-white p-8 text-center text-sm text-dark/70 shadow-soft">
+            You do not have any bookings yet. Once you make a reservation, it will appear here.
+          </div>
+        )
       ) : null}
 
       <Modal isOpen={Boolean(selected)} onClose={() => setSelected(null)} title="Booking Details">

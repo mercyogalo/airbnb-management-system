@@ -42,7 +42,6 @@ export class BookingsService {
   async create(dto: CreateBookingDto, guest: UserDocument): Promise<Booking> {
     const { propertyId, checkIn, checkOut, guests } = dto;
 
-    // ── Date validation ────────────────────────────────────────
     if (checkIn >= checkOut) {
       throw new BadRequestException('Check-out must be after check-in.');
     }
@@ -62,7 +61,6 @@ export class BookingsService {
       );
     }
 
-    // ── Blocked periods check ──────────────────────────────────
     const isBlocked = this.propertiesService.isDateRangeBlocked(property, checkIn, checkOut);
     if (isBlocked) {
       throw new ConflictException(
@@ -70,7 +68,6 @@ export class BookingsService {
       );
     }
 
-    // ── Overlap check against existing confirmed/pending bookings
     const conflict = await this.bookingModel.findOne({
       property: new Types.ObjectId(propertyId),
       status: { $in: [BookingStatus.AWAITING_PAYMENT, BookingStatus.CONFIRMED] },
@@ -84,43 +81,50 @@ export class BookingsService {
       );
     }
 
-    // ── Calculate price ────────────────────────────────────────
-    const hours  = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
-    const nights = Math.ceil(hours / 24);
+    const hours      = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+    const nights     = Math.ceil(hours / 24);
     const totalPrice = nights * property.pricePerNight;
 
+    // Resolve guest name/email with fallbacks in case the user document
+    // was created before name was a required field
+    const guestName  = guest.name  ?? guest.email?.split('@')[0] ?? 'Guest';
+    const guestEmail = guest.email ?? dto.guestPhone; // email should always exist
+
+    if (!guestEmail) {
+      throw new BadRequestException('User account is missing an email address.');
+    }
+
     const booking = await this.bookingModel.create({
-      guest: guest._id,
-      property: new Types.ObjectId(propertyId),
+      guest:           guest._id,
+      property:        new Types.ObjectId(propertyId),
       checkIn,
       checkOut,
       guests,
       totalPrice,
       specialRequests: dto.specialRequests,
-      guestPhone: dto.guestPhone,
-      guestEmail: guest.email,
-      guestName: guest.name,
-      status: BookingStatus.AWAITING_PAYMENT,
-      paymentDeadline: new Date(Date.now() + 30 * 60 * 1000), // 30 min
+      guestPhone:      dto.guestPhone,
+      guestEmail,
+      guestName,
+      status:          BookingStatus.AWAITING_PAYMENT,
+      paymentDeadline: new Date(Date.now() + 30 * 60 * 1000),
     });
 
-    // Send "booking received, please pay" email
     await this.mailService.sendBookingAwaitingPayment({
-      guestName: guest.name,
-      guestEmail: guest.email,
-      propertyName: property.name,
+      guestName,
+      guestEmail,
+      propertyName:           property.name,
       checkIn,
       checkOut,
       totalPrice,
-      currency: 'KES',
-      bookingId: booking._id.toString(),
+      currency:               'KES',
+      bookingId:              booking._id.toString(),
       paymentDeadlineMinutes: 30,
     });
 
     return booking;
   }
 
-  // ── Availability check (called before booking form submit) ─────
+  // ── Availability check ─────────────────────────────────────────
   async checkAvailability(
     propertyId: string,
     checkIn: Date,
@@ -130,14 +134,13 @@ export class BookingsService {
       return { available: false, conflictMessage: 'Check-out must be after check-in.' };
     }
 
-    // Check property blocked periods
     const property = await this.propertiesService.findOne(propertyId) as PropertyDocument;
 
     if (property.status !== PropertyStatus.ACTIVE) {
       return {
-        available: false,
+        available:      false,
         conflictMessage: 'This property is currently unavailable.',
-        blockedPeriods: property.blockedPeriods,
+        blockedPeriods:  property.blockedPeriods,
       };
     }
 
@@ -147,13 +150,12 @@ export class BookingsService {
         (p) => p.start < checkOut && p.end > checkIn,
       );
       return {
-        available: false,
+        available:      false,
         conflictMessage: `Selected dates overlap a blocked period: "${overlapping[0]?.reason}"`,
-        blockedPeriods: overlapping,
+        blockedPeriods:  overlapping,
       };
     }
 
-    // Check existing bookings
     const conflict = await this.bookingModel.findOne({
       property: new Types.ObjectId(propertyId),
       status: { $in: [BookingStatus.AWAITING_PAYMENT, BookingStatus.CONFIRMED] },
@@ -163,7 +165,7 @@ export class BookingsService {
 
     if (conflict) {
       return {
-        available: false,
+        available:      false,
         conflictMessage: `Already booked from ${conflict.checkIn.toISOString()} to ${conflict.checkOut.toISOString()}.`,
       };
     }
@@ -181,7 +183,7 @@ export class BookingsService {
 
   // ── Owner / admin: bookings for a specific property ───────────
   async findAllByProperty(propertyId: string, user: UserDocument) {
-    const property = await this.propertiesService.findOne(propertyId) as PropertyDocument;
+    const property        = await this.propertiesService.findOne(propertyId) as PropertyDocument;
     const propertyOwnerId = this.toIdString(property.owner);
     const requesterId     = this.toIdString(user._id);
 
@@ -264,11 +266,11 @@ export class BookingsService {
     return booking.save();
   }
 
-  // ── Expire unpaid bookings (called by a cron job) ─────────────
+  // ── Expire unpaid bookings (cron job) ─────────────────────────
   async expireUnpaidBookings(): Promise<number> {
     const result = await this.bookingModel.updateMany(
       {
-        status: BookingStatus.AWAITING_PAYMENT,
+        status:          BookingStatus.AWAITING_PAYMENT,
         paymentDeadline: { $lt: new Date() },
       },
       { $set: { status: BookingStatus.EXPIRED } },
@@ -276,7 +278,7 @@ export class BookingsService {
     return result.modifiedCount;
   }
 
-  // ── Delete — only AWAITING_PAYMENT or EXPIRED bookings ────────
+  // ── Delete — only AWAITING_PAYMENT, EXPIRED, CANCELLED ────────
   async delete(id: string, user: UserDocument): Promise<void> {
     const booking = await this.bookingModel.findById(id);
     if (!booking) throw new NotFoundException('Booking not found');

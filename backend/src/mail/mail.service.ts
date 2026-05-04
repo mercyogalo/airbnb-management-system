@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 export interface BookingReceiptData {
   guestName: string;
@@ -41,18 +41,15 @@ export interface PaymentFailedData {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
+  private fromAddress: string;
 
   constructor(private config: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: this.config.get<string>('MAIL_HOST'),
-      port: this.config.get<number>('MAIL_PORT') ?? 587,
-      secure: false,
-      auth: {
-        user: this.config.get<string>('MAIL_USER'),
-        pass: this.config.get<string>('MAIL_PASS'),
-      },
-    });
+    this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
+
+    const fromName  = this.config.get<string>('MAIL_FROM_NAME') ?? 'Customer Booking';
+    const fromEmail = this.config.get<string>('MAIL_FROM')      ?? 'onboarding@resend.dev';
+    this.fromAddress = `${fromName} <${fromEmail}>`;
   }
 
   // ── 1. Booking received — awaiting payment ─────────────────────
@@ -125,7 +122,6 @@ export class MailService {
             We're excited to host you — see your full receipt below.
           </p>
 
-          <!-- Receipt -->
           <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:24px;margin:24px 0;">
             <h3 style="margin:0 0 4px;color:#173350;">Official Receipt</h3>
             <p style="margin:0 0 20px;font-size:12px;color:#9ca3af;">Booking ID: ${data.bookingId}</p>
@@ -233,12 +229,19 @@ export class MailService {
   // ── Internal send helper ───────────────────────────────────────
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
-      await this.transporter.sendMail({
-        from: `"${this.config.get('MAIL_FROM_NAME') ?? 'Airbnb'}" <${this.config.get('MAIL_USER')}>`,
+      const { data, error } = await this.resend.emails.send({
+        from: this.fromAddress,
         to,
         subject,
         html,
       });
+
+      if (error) {
+        this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+        return;
+      }
+
+      this.logger.log(`Email sent to ${to} [id: ${data.id}]`);
     } catch (err) {
       this.logger.error(`Failed to send email to ${to}: ${(err as Error).message}`);
     }

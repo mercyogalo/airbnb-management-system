@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Booking, BookingSchema } from './schemas/booking.schema';
 import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
+import { UserBookingsController } from './user-bookings.controller';
 import { PropertiesModule } from '../properties/properties.module';
 import { MailModule } from '../mail/mail.module';
 
@@ -13,7 +14,7 @@ import { MailModule } from '../mail/mail.module';
     MailModule,
   ],
   providers: [BookingsService],
-  controllers: [BookingsController],
+  controllers: [BookingsController, UserBookingsController],
   exports: [BookingsService],
 })
 export class BookingsModule {}

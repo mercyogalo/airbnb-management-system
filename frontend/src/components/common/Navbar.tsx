@@ -4,23 +4,25 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { Logo } from '@/components/common/Logo';
 
 const links = [
-  { href: '#home', label: 'Home' },
-  { href: '#about', label: 'About' },
-  { href: '#properties', label: 'Properties' },
-  { href: '#testimonials', label: 'Testimonials' },
+  { href: '/#home', label: 'Home' },
+  { href: '/#about', label: 'About' },
+  { href: '/#properties', label: 'Properties' },
+  { href: '/#testimonials', label: 'Testimonials' },
 ];
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const { user, hydrated } = useAuth();
+  const dashboardHref = user?.role === 'admin' ? '/admin/properties' : '/user/browse';
 
   return (
     <header className="sticky top-0 z-40 border-b border-secondary/10 bg-white/95 shadow-sm backdrop-blur">
       <div className="container-shell flex h-20 items-center justify-between">
-        <Link href="/" className="text-2xl font-bold tracking-tight text-secondary">
-          StayEasy
-        </Link>
+        <Logo size={48} className="h-12 w-12 rounded-full object-cover" priority />
 
         <nav className="hidden items-center gap-7 lg:flex">
           {links.map((link) => (
@@ -31,12 +33,20 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Link href="/login" className="btn-ghost">
-            Log In
-          </Link>
-          <Link href="/register" className="btn-primary">
-            Get Started
-          </Link>
+          {!hydrated ? null : user ? (
+            <Link href={dashboardHref} className="btn-primary">
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className="btn-ghost">
+                Log In
+              </Link>
+              <Link href="/register" className="btn-primary">
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -67,12 +77,20 @@ export function Navbar() {
             </a>
           ))}
           <div className="flex gap-2 pt-2">
-            <Link href="/login" className="btn-ghost w-full text-center" onClick={() => setOpen(false)}>
-              Log In
-            </Link>
-            <Link href="/register" className="btn-primary w-full text-center" onClick={() => setOpen(false)}>
-              Get Started
-            </Link>
+            {!hydrated ? null : user ? (
+              <Link href={dashboardHref} className="btn-primary w-full text-center" onClick={() => setOpen(false)}>
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="btn-ghost w-full text-center" onClick={() => setOpen(false)}>
+                  Log In
+                </Link>
+                <Link href="/register" className="btn-primary w-full text-center" onClick={() => setOpen(false)}>
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
