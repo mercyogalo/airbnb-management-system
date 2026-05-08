@@ -69,6 +69,8 @@ export interface Booking {
   checkIn: string;
   checkOut: string;
   guests: number;
+  guestName?: string;
+  guestPhone?: string;
   totalPrice: number;
   status: 'awaiting_payment' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
   paymentMethod?: 'mpesa';

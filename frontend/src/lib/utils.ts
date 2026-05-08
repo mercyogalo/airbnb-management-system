@@ -19,6 +19,16 @@ export function formatDate(value: string | Date) {
   }).format(new Date(value));
 }
 
+export function formatDateTime(value: string | Date) {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
 export function getNightCount(checkIn: string | Date, checkOut: string | Date) {
   const oneDay = 1000 * 60 * 60 * 24;
   const start = new Date(checkIn).getTime();

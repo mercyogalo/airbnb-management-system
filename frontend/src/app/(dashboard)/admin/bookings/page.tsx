@@ -59,6 +59,7 @@ export default function AdminBookingsPage() {
       {!loading && !error ? (
         <BookingsTable
           bookings={bookings}
+          showGuestDetails
           actionCell={(booking) => (
             <div className="flex flex-wrap gap-2">
               {booking.status === 'confirmed' ? (
